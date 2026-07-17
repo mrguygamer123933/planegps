@@ -1,0 +1,53 @@
+# planegps example configuration.
+# Copy to config.yaml and edit, then run:  planegps --config config.yaml
+# Every field is optional; anything omitted falls back to the built-in default.
+
+location:
+  # Where the device physically sits. Default is near London Heathrow so the
+  # demo has a busy sky. Change this to your house!
+  latitude: 51.4700
+  longitude: -0.4543
+  name: "Home"
+
+detection:
+  # Horizontal radius (in meters) of the circle around the device in which a
+  # plane counts as "overhead". Fully customizable. Small values (e.g. 200)
+  # only trigger when a plane is almost directly above you.
+  radius_m: 3000
+  min_altitude_m: 0
+  # max_altitude_m: 12000   # uncomment to ignore high cruising traffic
+
+data_source:
+  # mock            -> synthetic planes, no network needed (great for testing)
+  # opensky         -> OpenSky Network REST API (free, anonymous or with login)
+  # flightradar24   -> FlightRadar24 (needs: pip install "planegps[flightradar24]")
+  provider: mock
+  poll_interval_s: 5
+  # opensky_username: your_user
+  # opensky_password: your_pass
+  mock_num_planes: 7
+
+display:
+  # web     -> browser dashboard (monitor)
+  # console -> plain text (terminal / headless)
+  # led     -> RGB LED matrix on a Raspberry Pi (writes led_preview.png elsewhere)
+  # Combine several with commas to run them at once, e.g. "web,led".
+  backend: web
+  web:
+    host: 0.0.0.0
+    port: 8080
+    # Show a photo of the overhead aircraft (via planespotters.net). Set to
+    # false to disable network photo lookups (a silhouette is shown instead).
+    photos: true
+    # planespotters requires a User-Agent with a contact URL/email. Please
+    # change this to your own project/contact before heavy use.
+    photo_user_agent: "planegps/0.1 (+https://github.com/mrguygamer123933/planegps)"
+    # Default dashboard theme: "dark", "gray", "light", or "auto" (follow the
+    # browser). The header button cycles dark -> gray -> light and back; the
+    # viewer's choice is remembered per browser.
+    theme: dark
+  led:
+    rows: 32
+    cols: 64
+    brightness: 80
+    preview_path: "led_preview.png"

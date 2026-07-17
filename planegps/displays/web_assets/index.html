@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>planegps &mdash; planes overhead</title>
+    <link rel="stylesheet" href="/vendor/leaflet/leaflet.css" />
+    <script src="/vendor/leaflet/leaflet.js"></script>
+    <script>
+      // Apply the saved theme before first paint to avoid a flash of the wrong
+      // colours. Falls back to dark until the server default is fetched.
+      (function () {
+        try {
+          var saved = localStorage.getItem("planegps-theme");
+          var t = saved || "dark";
+          if (t === "auto") {
+            t = window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+          }
+          document.documentElement.setAttribute("data-theme", t);
+        } catch (e) {
+          document.documentElement.setAttribute("data-theme", "dark");
+        }
+      })();
+    </script>
+    <style>
+      :root, [data-theme="dark"] {
+        --bg: #05070d;
+        --panel: #0d1320;
+        --panel-2: #131c2e;
+        --edge: #1e2c45;
+        --accent: #34d399;
+        --accent-2: #38bdf8;
+        --warn: #f59e0b;
+        --text: #e6edf7;
+        --muted: #7c8aa5;
+        --plane-dim: #9fb3d1;
+        --app-bg: radial-gradient(1200px 800px at 70% -10%, #0a1424 0%, #05070d 60%);
+        --header-bg: linear-gradient(180deg, rgba(19,28,46,.85), rgba(13,19,32,.6));
+      }
+      [data-theme="gray"] {
+        --bg: #363b43;
+        --panel: #3e434c;
+        --panel-2: #454b55;
+        --edge: #565d69;
+        --accent: #34d399;
+        --accent-2: #56c5f5;
+        --warn: #fbbf24;
+        --text: #eef1f5;
+        --muted: #b3bcc9;
+        --plane-dim: #cbd3df;
+        --app-bg: radial-gradient(1200px 800px at 70% -10%, #434953 0%, #363b43 60%);
+        --header-bg: #3e434c;
+      }
+      [data-theme="light"] {
+        --bg: #eef2f7;
+        --panel: #ffffff;
+        --panel-2: #f6f9fc;
+        --edge: #d3dce8;
+        --accent: #0f9d63;
+        --accent-2: #0369a1;
+        --warn: #b45309;
+        --text: #0f1826;
+        --muted: #5a6b83;
+        --plane-dim: #64748b;
+        --app-bg: radial-gradient(1200px 800px at 70% -10%, #ffffff 0%, #e8eef6 60%);
+        --header-bg: #ffffff;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; height: 100%; }
+      body {
+        background: var(--app-bg);
+        color: var(--text);
+        font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+        display: flex; flex-direction: column; min-height: 100%;
+      }
+      header {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 14px 22px; border-bottom: 1px solid var(--edge);
+        background: var(--header-bg);
+      }
+      .theme-toggle {
+        cursor: pointer; background: var(--panel-2); color: var(--text);
+        border: 1px solid var(--edge); border-radius: 999px; padding: 6px 14px;
+        font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 7px;
+      }
+      .theme-toggle:hover { border-color: var(--accent); }
+      .brand { display: flex; align-items: baseline; gap: 12px; }
+      .brand h1 { font-size: 20px; margin: 0; letter-spacing: .5px; }
+      .brand .plane { color: var(--accent); }
+      .brand small { color: var(--muted); }
+      .meta { display: flex; gap: 22px; font-size: 13px; color: var(--muted); }
+      .meta b { color: var(--text); font-weight: 600; }
+      .dot { display:inline-block; width:8px; height:8px; border-radius:50%; background: var(--accent); margin-right:6px; box-shadow:0 0 8px var(--accent); }
+      .dot.stale { background: var(--warn); box-shadow:0 0 8px var(--warn); }
+
+      main { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(320px, 1fr); gap: 20px; padding: 20px; flex: 1; }
+      .left { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+      .views { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+      @media (max-width: 1100px) { .views { grid-template-columns: 1fr; } }
+      @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+
+      .card { background: linear-gradient(180deg, var(--panel-2), var(--panel)); border: 1px solid var(--edge); border-radius: 16px; padding: 16px; }
+      .card h2 { margin: 0 0 12px; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
+
+      #radar, #sky { width: 100%; height: auto; display: block; }
+
+      #map { width: 100%; height: 440px; border-radius: 12px; border: 1px solid var(--edge); background: var(--panel); z-index: 0; }
+      .leaflet-container { background: var(--panel); font: inherit; }
+      .plane-marker { transition: transform .3s linear; }
+      .plane-marker svg { display: block; filter: drop-shadow(0 0 2px rgba(0,0,0,.5)); }
+      .home-dot { }
+      .leaflet-popup-content { margin: 10px 12px; font-size: 13px; line-height: 1.5; }
+      .leaflet-popup-content .pm-cs { font-weight: 700; font-size: 15px; }
+
+      .lookup-card { background: linear-gradient(90deg, rgba(52,211,153,.14), rgba(56,189,248,.05)); border-color: rgba(52,211,153,.35); }
+      .lookup-hint .big { font-size: 30px; font-weight: 800; color: var(--accent); letter-spacing: .5px; }
+      .lookup-hint .sub { color: var(--text); font-size: 15px; margin-top: 6px; }
+      .lookup-hint .sub b { color: var(--accent-2); }
+      .lookup-hint.idle .big { color: var(--muted); font-size: 22px; }
+
+      .aircraft { display: flex; gap: 16px; align-items: center; }
+      .aircraft .ac-photo { width: 300px; max-width: 45%; border-radius: 12px; border: 1px solid var(--edge); display: block; background: var(--panel); }
+      .aircraft .ac-silhouette { width: 200px; max-width: 40%; }
+      .aircraft .ac-info { min-width: 0; }
+      .aircraft .ac-title { font-size: 20px; font-weight: 700; }
+      .aircraft .ac-title .type { color: var(--accent-2); }
+      .aircraft .ac-sub { color: var(--muted); font-size: 14px; margin-top: 4px; }
+      .aircraft .ac-credit { color: var(--muted); font-size: 12px; margin-top: 10px; }
+      .aircraft .ac-credit a { color: var(--accent); text-decoration: none; }
+      .aircraft .ac-empty { color: var(--muted); padding: 20px 0; }
+
+      .led-wrap { background: #090b12; border: 1px solid var(--edge); border-radius: 10px; padding: 12px; display: flex; justify-content: center; }
+      .led-img { width: 100%; max-width: 560px; height: auto; image-rendering: auto; display: block; }
+      .led-note { color: var(--muted); font-size: 12px; margin-top: 10px; }
+      @media (max-width: 560px) { .aircraft { flex-direction: column; align-items: flex-start; } .aircraft .ac-photo, .aircraft .ac-silhouette { max-width: 100%; width: 100%; } }
+
+      .list { display: flex; flex-direction: column; gap: 10px; max-height: 70vh; overflow-y: auto; }
+      .flight { border: 1px solid var(--edge); border-radius: 12px; padding: 12px 14px; background: var(--bg); }
+      .flight.top { border-color: var(--accent); box-shadow: 0 0 0 1px rgba(52,211,153,.25) inset; }
+      .flight .row1 { display:flex; align-items:center; justify-content:space-between; }
+      .flight .cs { font-size: 18px; font-weight: 700; letter-spacing: .5px; }
+      .flight .type { font-size: 12px; color: var(--accent-2); border:1px solid var(--edge); padding:2px 8px; border-radius:999px; }
+      .flight .route { font-size: 15px; margin: 6px 0 8px; color: var(--text); }
+      .flight .route .arrow { color: var(--accent); margin: 0 6px; }
+      .flight .stats { display:flex; flex-wrap:wrap; gap: 14px; font-size: 12px; color: var(--muted); }
+      .flight .stats b { color: var(--text); font-weight: 600; }
+      .empty { color: var(--muted); text-align:center; padding: 30px 0; }
+      .count-badge { background: var(--accent); color:var(--bg); font-weight:700; border-radius:999px; padding:1px 9px; font-size:12px; margin-left:8px; }
+      footer { text-align:center; color: var(--muted); font-size: 12px; padding: 10px; }
+      .err { color: var(--warn); }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="brand">
+        <h1><span class="plane">&#9992;</span> planegps</h1>
+        <small>planes flying over your location</small>
+      </div>
+      <div class="meta">
+        <div><span id="statusdot" class="dot"></span><span id="status">connecting&hellip;</span></div>
+        <div>Location: <b id="loc">&mdash;</b></div>
+        <div>Radius: <b id="radius">&mdash;</b></div>
+        <div>Source: <b id="source">&mdash;</b></div>
+        <button id="themeToggle" class="theme-toggle" type="button" title="Toggle light / dark theme">
+          <span id="themeIcon">&#9789;</span><span id="themeLabel">Dark</span>
+        </button>
+      </div>
+    </header>
+
+    <main>
+      <section class="left">
+        <div class="card lookup-card">
+          <h2>Look up &#8593;</h2>
+          <div id="lookup" class="lookup-hint idle">
+            <div class="big">Waiting for data&hellip;</div>
+          </div>
+        </div>
+        <div class="views">
+          <div class="card">
+            <h2>Sky view &mdash; where to look</h2>
+            <canvas id="sky" width="440" height="440"></canvas>
+          </div>
+          <div class="card">
+            <h2>Radar &mdash; map position</h2>
+            <canvas id="radar" width="440" height="440"></canvas>
+          </div>
+        </div>
+        <div class="card map-card">
+          <h2>Map &mdash; live positions</h2>
+          <div id="map"></div>
+        </div>
+        <div class="card aircraft-card">
+          <h2>Aircraft</h2>
+          <div id="aircraft" class="aircraft">
+            <div class="ac-empty">Waiting for data&hellip;</div>
+          </div>
+        </div>
+        <div class="card led-card">
+          <h2>LED board &mdash; live preview</h2>
+          <div class="led-wrap"><img id="ledimg" class="led-img" alt="LED board preview" /></div>
+          <div class="led-note">This is what a 64&times;32 RGB LED matrix (e.g. on a Raspberry Pi) shows. Run <code>--display web,led</code> to drive both at once.</div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Overhead now <span id="count" class="count-badge">0</span></h2>
+        <div id="list" class="list"><div class="empty">Waiting for data&hellip;</div></div>
+      </section>
+    </main>
+
+    <footer>planegps &middot; refresh every second &middot; radius is customizable in <code>config.yaml</code></footer>
+
+    <script src="/app.js"></script>
+  </body>
+</html>
