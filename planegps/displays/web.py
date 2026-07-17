@@ -51,13 +51,19 @@ class WebDisplay(Display):
         # Quiet the werkzeug request log so the console display stays readable.
         logging.getLogger("werkzeug").setLevel(logging.WARNING)
 
+        def _no_cache(resp):
+            # The dashboard HTML/JS change with releases; always revalidate so
+            # browsers don't run a stale bundle.
+            resp.headers["Cache-Control"] = "no-cache, max-age=0"
+            return resp
+
         @app.route("/")
         def index():
-            return send_from_directory(_ASSETS_DIR, "index.html")
+            return _no_cache(send_from_directory(_ASSETS_DIR, "index.html"))
 
         @app.route("/app.js")
         def appjs():
-            return send_from_directory(_ASSETS_DIR, "app.js")
+            return _no_cache(send_from_directory(_ASSETS_DIR, "app.js"))
 
         @app.route("/vendor/<path:filename>")
         def vendor(filename):
