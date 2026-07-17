@@ -70,6 +70,10 @@ class WebDisplay(Display):
                 return jsonify({"available": False})
             return jsonify({"available": True, **data})
 
+        @app.route("/api/config")
+        def client_config():
+            return jsonify({"theme": self.cfg.display.web.theme})
+
         @app.route("/healthz")
         def healthz():
             return jsonify({"ok": True})

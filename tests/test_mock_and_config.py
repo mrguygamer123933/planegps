@@ -42,3 +42,8 @@ def test_config_env_override(monkeypatch):
 def test_create_source_factory():
     cfg = load_config()
     assert create_source(cfg).name == "mock"
+
+
+def test_default_theme_is_dark():
+    cfg = load_config()
+    assert cfg.display.web.theme == "dark"

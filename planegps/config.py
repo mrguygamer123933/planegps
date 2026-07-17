@@ -44,6 +44,10 @@ class WebConfig:
     # Show a photo of the aircraft (via planespotters.net) on the dashboard.
     photos: bool = True
     photo_user_agent: str = DEFAULT_USER_AGENT
+    # Default colour theme for the dashboard: "dark", "light", or "auto"
+    # (auto follows the browser/OS preference). Users can still toggle it in
+    # the UI; their choice is remembered per browser.
+    theme: str = "dark"
 
 
 @dataclass

@@ -33,6 +33,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Output backend.",
     )
     parser.add_argument("--port", type=int, help="Port for the web display.")
+    parser.add_argument(
+        "--theme",
+        choices=["dark", "light", "auto"],
+        help="Default web dashboard theme.",
+    )
     parser.add_argument("--interval", type=float, help="Poll interval in seconds.")
     parser.add_argument("--name", help="Human-friendly location name.")
     return parser
@@ -62,6 +67,8 @@ def apply_overrides(cfg: Config, args: argparse.Namespace) -> Config:
         display = replace(display, backend=args.display)
     if args.port is not None:
         display = replace(display, web=replace(display.web, port=args.port))
+    if args.theme is not None:
+        display = replace(display, web=replace(display.web, theme=args.theme))
 
     return replace(
         cfg,

@@ -30,6 +30,78 @@ function mostOverhead(state) {
   return best || list[0] || null;
 }
 
+function cssVar(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+function hexToRgba(hex, alpha) {
+  const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex || "");
+  if (!m) return hex;
+  const r = parseInt(m[1], 16), g = parseInt(m[2], 16), b = parseInt(m[3], 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+// Current theme colours pulled from CSS variables so canvases match the theme.
+function themeColors() {
+  const accent = cssVar("--accent");
+  const dim = cssVar("--plane-dim");
+  return {
+    edge: cssVar("--edge"),
+    muted: cssVar("--muted"),
+    text: cssVar("--text"),
+    accent,
+    accent2: cssVar("--accent-2"),
+    dim,
+    sweep: hexToRgba(accent, 0.28),
+    sweep0: hexToRgba(accent, 0),
+    guide: hexToRgba(accent, 0.5),
+    dimFaint: hexToRgba(dim, 0.25),
+  };
+}
+
+// --- Theme toggle -----------------------------------------------------------
+function applyTheme(theme) {
+  let effective = theme;
+  if (theme === "auto") {
+    effective = window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+  }
+  document.documentElement.setAttribute("data-theme", effective);
+  const icon = document.getElementById("themeIcon");
+  const label = document.getElementById("themeLabel");
+  if (icon && label) {
+    icon.innerHTML = effective === "light" ? "\u2600" : "\u263D";
+    label.textContent = effective === "light" ? "Light" : "Dark";
+  }
+}
+
+function initTheme() {
+  let saved = null;
+  try {
+    saved = localStorage.getItem("planegps-theme");
+  } catch (e) {}
+  applyTheme(saved || "dark");
+  // If the user hasn't chosen, adopt the server's configured default.
+  if (!saved) {
+    fetch("/api/config", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((c) => {
+        if (c && c.theme) applyTheme(c.theme);
+      })
+      .catch(() => {});
+  }
+  const btn = document.getElementById("themeToggle");
+  if (btn) {
+    btn.addEventListener("click", () => {
+      const current = document.documentElement.getAttribute("data-theme");
+      const next = current === "light" ? "dark" : "light";
+      try {
+        localStorage.setItem("planegps-theme", next);
+      } catch (e) {}
+      applyTheme(next);
+    });
+  }
+}
+
 // A stylized top-view airliner silhouette, used when no real photo is found
 // (or when offline). Wide-body types get four engines / a broader wing.
 function silhouetteSVG(type) {
@@ -181,10 +253,11 @@ function drawSky(state) {
   const cx = W / 2, cy = H / 2;
   const R = Math.min(W, H) / 2 - 18;
   ctx.clearRect(0, 0, W, H);
+  const col = themeColors();
 
   // Elevation rings (0 deg at edge -> 90 deg at center).
-  ctx.strokeStyle = "#1e2c45";
-  ctx.fillStyle = "#7c8aa5";
+  ctx.strokeStyle = col.edge;
+  ctx.fillStyle = col.muted;
   ctx.font = "11px system-ui";
   ctx.textAlign = "left";
   for (const elev of [0, 30, 60]) {
@@ -195,7 +268,7 @@ function drawSky(state) {
     ctx.fillText(elev + "\u00b0", cx + 3, cy - r + 12);
   }
   // Compass labels around the horizon.
-  ctx.fillStyle = "#7c8aa5";
+  ctx.fillStyle = col.muted;
   ctx.textAlign = "center";
   ctx.fillText("N", cx, cy - R - 5);
   ctx.fillText("S", cx, cy + R + 13);
@@ -203,11 +276,11 @@ function drawSky(state) {
   ctx.fillText("W", cx - R - 9, cy + 4);
 
   // Zenith marker (straight up).
-  ctx.fillStyle = "#38bdf8";
+  ctx.fillStyle = col.accent2;
   ctx.beginPath();
   ctx.arc(cx, cy, 3, 0, Math.PI * 2);
   ctx.fill();
-  ctx.fillStyle = "#7c8aa5";
+  ctx.fillStyle = col.muted;
   ctx.fillText("UP", cx, cy - 8);
   ctx.textAlign = "left";
 
@@ -220,18 +293,18 @@ function drawSky(state) {
     const y = cy + Math.sin(a) * rr;
     if (isTop) {
       // guide line from zenith toward the plane's azimuth
-      ctx.strokeStyle = "rgba(52,211,153,.5)";
+      ctx.strokeStyle = col.guide;
       ctx.beginPath();
       ctx.moveTo(cx, cy);
       ctx.lineTo(x, y);
       ctx.stroke();
     }
-    ctx.fillStyle = isTop ? "#34d399" : "#9fb3d1";
+    ctx.fillStyle = isTop ? col.accent : col.dim;
     ctx.beginPath();
     ctx.arc(x, y, isTop ? 6 : 3, 0, Math.PI * 2);
     ctx.fill();
     if (isTop) {
-      ctx.fillStyle = "#e6edf7";
+      ctx.fillStyle = col.text;
       ctx.font = "12px system-ui";
       ctx.fillText(f.callsign || f.icao24, x + 9, y - 7);
     }
@@ -246,10 +319,11 @@ function drawRadar(state) {
   const cx = W / 2, cy = H / 2;
   const R = Math.min(W, H) / 2 - 16;
   ctx.clearRect(0, 0, W, H);
+  const col = themeColors();
 
   // Rings
-  ctx.strokeStyle = "#1e2c45";
-  ctx.fillStyle = "#7c8aa5";
+  ctx.strokeStyle = col.edge;
+  ctx.fillStyle = col.muted;
   ctx.font = "11px system-ui";
   for (let i = 1; i <= 4; i++) {
     const r = (R * i) / 4;
@@ -264,7 +338,7 @@ function drawRadar(state) {
   ctx.moveTo(cx - R, cy); ctx.lineTo(cx + R, cy);
   ctx.moveTo(cx, cy - R); ctx.lineTo(cx, cy + R);
   ctx.stroke();
-  ctx.fillStyle = "#7c8aa5";
+  ctx.fillStyle = col.muted;
   ctx.textAlign = "center";
   ctx.fillText("N", cx, cy - R - 4);
   ctx.fillText("S", cx, cy + R + 12);
@@ -276,8 +350,8 @@ function drawRadar(state) {
   const t = (Date.now() / 3000) % 1;
   const ang = t * Math.PI * 2 - Math.PI / 2;
   const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, R);
-  grad.addColorStop(0, "rgba(52,211,153,0.28)");
-  grad.addColorStop(1, "rgba(52,211,153,0)");
+  grad.addColorStop(0, col.sweep);
+  grad.addColorStop(1, col.sweep0);
   ctx.fillStyle = grad;
   ctx.beginPath();
   ctx.moveTo(cx, cy);
@@ -286,7 +360,7 @@ function drawRadar(state) {
   ctx.fill();
 
   // Center (home)
-  ctx.fillStyle = "#38bdf8";
+  ctx.fillStyle = col.accent2;
   ctx.beginPath();
   ctx.arc(cx, cy, 4, 0, Math.PI * 2);
   ctx.fill();
@@ -301,7 +375,7 @@ function drawRadar(state) {
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate((f.heading || 0) * (Math.PI / 180));
-    ctx.fillStyle = isTop ? "#34d399" : "#9fb3d1";
+    ctx.fillStyle = isTop ? col.accent : col.dim;
     ctx.beginPath();
     ctx.moveTo(0, -7);
     ctx.lineTo(5, 6);
@@ -311,7 +385,7 @@ function drawRadar(state) {
     ctx.fill();
     ctx.restore();
     if (isTop) {
-      ctx.fillStyle = "#e6edf7";
+      ctx.fillStyle = col.text;
       ctx.font = "12px system-ui";
       ctx.fillText(f.callsign || f.icao24, x + 8, y - 6);
     }
@@ -324,7 +398,7 @@ function drawRadar(state) {
       const a = (f.bearing_deg - 90) * (Math.PI / 180);
       const x = cx + Math.cos(a) * R;
       const y = cy + Math.sin(a) * R;
-      ctx.fillStyle = "rgba(159,179,209,0.25)";
+      ctx.fillStyle = col.dimFaint;
       ctx.beginPath();
       ctx.arc(x, y, 2, 0, Math.PI * 2);
       ctx.fill();
@@ -374,6 +448,7 @@ function loop() {
   requestAnimationFrame(loop);
 }
 
+initTheme();
 poll();
 setInterval(poll, 1000);
 loop();

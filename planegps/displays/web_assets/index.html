@@ -4,8 +4,24 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>planegps &mdash; planes overhead</title>
+    <script>
+      // Apply the saved theme before first paint to avoid a flash of the wrong
+      // colours. Falls back to dark until the server default is fetched.
+      (function () {
+        try {
+          var saved = localStorage.getItem("planegps-theme");
+          var t = saved || "dark";
+          if (t === "auto") {
+            t = window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+          }
+          document.documentElement.setAttribute("data-theme", t);
+        } catch (e) {
+          document.documentElement.setAttribute("data-theme", "dark");
+        }
+      })();
+    </script>
     <style>
-      :root {
+      :root, [data-theme="dark"] {
         --bg: #05070d;
         --panel: #0d1320;
         --panel-2: #131c2e;
@@ -15,11 +31,28 @@
         --warn: #f59e0b;
         --text: #e6edf7;
         --muted: #7c8aa5;
+        --plane-dim: #9fb3d1;
+        --app-bg: radial-gradient(1200px 800px at 70% -10%, #0a1424 0%, #05070d 60%);
+        --header-bg: linear-gradient(180deg, rgba(19,28,46,.85), rgba(13,19,32,.6));
+      }
+      [data-theme="light"] {
+        --bg: #eef2f7;
+        --panel: #ffffff;
+        --panel-2: #f6f9fc;
+        --edge: #d3dce8;
+        --accent: #0f9d63;
+        --accent-2: #0369a1;
+        --warn: #b45309;
+        --text: #0f1826;
+        --muted: #5a6b83;
+        --plane-dim: #64748b;
+        --app-bg: radial-gradient(1200px 800px at 70% -10%, #ffffff 0%, #e8eef6 60%);
+        --header-bg: #ffffff;
       }
       * { box-sizing: border-box; }
       html, body { margin: 0; height: 100%; }
       body {
-        background: radial-gradient(1200px 800px at 70% -10%, #0a1424 0%, var(--bg) 60%);
+        background: var(--app-bg);
         color: var(--text);
         font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
         display: flex; flex-direction: column; min-height: 100%;
@@ -27,8 +60,14 @@
       header {
         display: flex; align-items: center; justify-content: space-between;
         padding: 14px 22px; border-bottom: 1px solid var(--edge);
-        background: linear-gradient(180deg, rgba(19,28,46,.85), rgba(13,19,32,.6));
+        background: var(--header-bg);
       }
+      .theme-toggle {
+        cursor: pointer; background: var(--panel-2); color: var(--text);
+        border: 1px solid var(--edge); border-radius: 999px; padding: 6px 14px;
+        font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 7px;
+      }
+      .theme-toggle:hover { border-color: var(--accent); }
       .brand { display: flex; align-items: baseline; gap: 12px; }
       .brand h1 { font-size: 20px; margin: 0; letter-spacing: .5px; }
       .brand .plane { color: var(--accent); }
@@ -56,7 +95,7 @@
       .lookup-hint.idle .big { color: var(--muted); font-size: 22px; }
 
       .aircraft { display: flex; gap: 16px; align-items: center; }
-      .aircraft .ac-photo { width: 300px; max-width: 45%; border-radius: 12px; border: 1px solid var(--edge); display: block; background: #05070d; }
+      .aircraft .ac-photo { width: 300px; max-width: 45%; border-radius: 12px; border: 1px solid var(--edge); display: block; background: var(--panel); }
       .aircraft .ac-silhouette { width: 200px; max-width: 40%; }
       .aircraft .ac-info { min-width: 0; }
       .aircraft .ac-title { font-size: 20px; font-weight: 700; }
@@ -78,7 +117,7 @@
       .flight .stats { display:flex; flex-wrap:wrap; gap: 14px; font-size: 12px; color: var(--muted); }
       .flight .stats b { color: var(--text); font-weight: 600; }
       .empty { color: var(--muted); text-align:center; padding: 30px 0; }
-      .count-badge { background: var(--accent); color:#04150e; font-weight:700; border-radius:999px; padding:1px 9px; font-size:12px; margin-left:8px; }
+      .count-badge { background: var(--accent); color:var(--bg); font-weight:700; border-radius:999px; padding:1px 9px; font-size:12px; margin-left:8px; }
       footer { text-align:center; color: var(--muted); font-size: 12px; padding: 10px; }
       .err { color: var(--warn); }
     </style>
@@ -94,6 +133,9 @@
         <div>Location: <b id="loc">&mdash;</b></div>
         <div>Radius: <b id="radius">&mdash;</b></div>
         <div>Source: <b id="source">&mdash;</b></div>
+        <button id="themeToggle" class="theme-toggle" type="button" title="Toggle light / dark theme">
+          <span id="themeIcon">&#9789;</span><span id="themeLabel">Dark</span>
+        </button>
       </div>
     </header>
 
