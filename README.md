@@ -2,6 +2,7 @@
 
 Detect the aircraft flying over your house and show **what** they are, **where they're from**, and **where they're going** — on a monitor or an RGB LED board. Runs locally on a PC or a Raspberry Pi.
 
+- **"Look up" guidance** – tells you where to point your eyes to physically spot the plane: the compass direction and the elevation angle above the horizon (a sky‑view dome shows this at a glance).
 - **Customizable radius** – define a circle of any size around the device (default 3 km, set it to 200 m if you only want planes almost directly overhead).
 - **Multiple data sources** – OpenSky Network (free), FlightRadar24 (optional), or a built‑in offline **mock** source for demos/testing.
 - **Multiple displays** – a browser **radar dashboard** for a monitor, a **console** view for headless setups, and an **LED matrix** backend for Raspberry Pi (with a PNG preview everywhere else).
@@ -49,7 +50,11 @@ CLI flags (`--lat`, `--lon`, `--radius`, `--provider`, `--display`, `--port`, `-
 
 ## Displays
 
-- **web** – dark radar dashboard at `http://<host>:<port>` showing a sweeping radar, plane markers, and a live list with route/type/altitude/distance/direction. Best for a monitor.
+- **web** – dark dashboard at `http://<host>:<port>`, best for a monitor. Shows:
+  - a **"Look up"** hint telling you exactly where to point your eyes, e.g. *"Look SE ↗ 75° up"* or *"Straight up!"*;
+  - a **sky view** dome (center = straight up / zenith, edge = horizon) so you can see how high in the sky and in which compass direction to look;
+  - a top-down **radar** of each plane's map position; and
+  - a live list with route, aircraft type, altitude, distance, direction, and elevation ("up") angle.
 - **console** – plain‑text output; great for headless boxes and logs.
 - **led** – renders each frame for an RGB LED matrix. On a Raspberry Pi with the [`rpi-rgb-led-matrix`](https://github.com/hzeller/rpi-rgb-led-matrix) Python bindings it drives the panel; elsewhere it writes `led_preview.png` so you can see exactly what the panel would show.
 
