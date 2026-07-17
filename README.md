@@ -53,8 +53,11 @@ CLI flags (`--lat`, `--lon`, `--radius`, `--provider`, `--display`, `--port`, `-
 - **web** – dark dashboard at `http://<host>:<port>`, best for a monitor. Shows:
   - a **"Look up"** hint telling you exactly where to point your eyes, e.g. *"Look SE ↗ 75° up"* or *"Straight up!"*;
   - a **sky view** dome (center = straight up / zenith, edge = horizon) so you can see how high in the sky and in which compass direction to look;
-  - a top-down **radar** of each plane's map position; and
+  - a top-down **radar** of each plane's map position;
+  - an **aircraft photo** of the overhead plane (via [planespotters.net](https://www.planespotters.net/photo/api)), with a silhouette fallback when offline or when no photo exists; and
   - a live list with route, aircraft type, altitude, distance, direction, and elevation ("up") angle.
+
+  Photo lookups can be disabled with `display.web.photos: false`. planespotters requires a `User-Agent` containing a contact URL/email — set `display.web.photo_user_agent` to your own before heavy use.
 - **console** – plain‑text output; great for headless boxes and logs.
 - **led** – renders each frame for an RGB LED matrix. On a Raspberry Pi with the [`rpi-rgb-led-matrix`](https://github.com/hzeller/rpi-rgb-led-matrix) Python bindings it drives the panel; elsewhere it writes `led_preview.png` so you can see exactly what the panel would show.
 
