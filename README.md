@@ -3,7 +3,7 @@
 Detect the aircraft flying over your house and show **what** they are, **where they're from**, and **where they're going** — on a monitor or an RGB LED board. Runs locally on a PC or a Raspberry Pi.
 
 - **Live map** – a Flightradar24‑style interactive map (Leaflet + OpenStreetMap/CARTO tiles) with plane markers at their real positions, your location, and the detection‑radius circle. Click a plane for its details.
-- **Light & dark themes** – the web dashboard ships with both; viewers can toggle in the UI (remembered per browser) and you can set the default (`display.web.theme: dark | light | auto`).
+- **Dark / gray / light themes** – the header button cycles `dark → gray → light` and bounces back `light → gray → dark`; the choice is remembered per browser, and you can set the default (`display.web.theme: dark | gray | light | auto`).
 - **"Look up" guidance** – tells you where to point your eyes to physically spot the plane: the compass direction and the elevation angle above the horizon (a sky‑view dome shows this at a glance).
 - **Customizable radius** – define a circle of any size around the device (default 3 km, set it to 200 m if you only want planes almost directly overhead).
 - **Multiple data sources** – OpenSky Network (free), FlightRadar24 (optional), or a built‑in offline **mock** source for demos/testing.
@@ -62,7 +62,7 @@ CLI flags (`--lat`, `--lon`, `--radius`, `--provider`, `--display`, `--port`, `-
 
   Photo lookups can be disabled with `display.web.photos: false`. planespotters requires a `User-Agent` containing a contact URL/email — set `display.web.photo_user_agent` to your own before heavy use.
 
-  The dashboard has a **light/dark theme toggle** in the header (remembered per browser). Set the default with `display.web.theme` (`dark`, `light`, or `auto`) or the `--theme` flag.
+  The header button cycles three **themes** — `dark → gray → light` (and bounces back) — remembered per browser. Set the default with `display.web.theme` (`dark`, `gray`, `light`, or `auto`) or the `--theme` flag.
 - **console** – plain‑text output; great for headless boxes and logs.
 - **led** – renders each frame for an RGB LED matrix. On a Raspberry Pi with the [`rpi-rgb-led-matrix`](https://github.com/hzeller/rpi-rgb-led-matrix) Python bindings it drives the panel; elsewhere it writes an `led_preview.png` "board sketch" (round glowing LEDs on a bezel) so you can see exactly what the panel would show. The web dashboard also embeds this LED board as a live preview panel.
 
