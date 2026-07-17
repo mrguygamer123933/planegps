@@ -55,6 +55,18 @@
       .lookup-hint .sub b { color: var(--accent-2); }
       .lookup-hint.idle .big { color: var(--muted); font-size: 22px; }
 
+      .aircraft { display: flex; gap: 16px; align-items: center; }
+      .aircraft .ac-photo { width: 300px; max-width: 45%; border-radius: 12px; border: 1px solid var(--edge); display: block; background: #05070d; }
+      .aircraft .ac-silhouette { width: 200px; max-width: 40%; }
+      .aircraft .ac-info { min-width: 0; }
+      .aircraft .ac-title { font-size: 20px; font-weight: 700; }
+      .aircraft .ac-title .type { color: var(--accent-2); }
+      .aircraft .ac-sub { color: var(--muted); font-size: 14px; margin-top: 4px; }
+      .aircraft .ac-credit { color: var(--muted); font-size: 12px; margin-top: 10px; }
+      .aircraft .ac-credit a { color: var(--accent); text-decoration: none; }
+      .aircraft .ac-empty { color: var(--muted); padding: 20px 0; }
+      @media (max-width: 560px) { .aircraft { flex-direction: column; align-items: flex-start; } .aircraft .ac-photo, .aircraft .ac-silhouette { max-width: 100%; width: 100%; } }
+
       .list { display: flex; flex-direction: column; gap: 10px; max-height: 70vh; overflow-y: auto; }
       .flight { border: 1px solid var(--edge); border-radius: 12px; padding: 12px 14px; background: rgba(9,14,24,.6); }
       .flight.top { border-color: var(--accent); box-shadow: 0 0 0 1px rgba(52,211,153,.25) inset; }
@@ -101,6 +113,12 @@
           <div class="card">
             <h2>Radar &mdash; map position</h2>
             <canvas id="radar" width="440" height="440"></canvas>
+          </div>
+        </div>
+        <div class="card aircraft-card">
+          <h2>Aircraft</h2>
+          <div id="aircraft" class="aircraft">
+            <div class="ac-empty">Waiting for data&hellip;</div>
           </div>
         </div>
       </section>

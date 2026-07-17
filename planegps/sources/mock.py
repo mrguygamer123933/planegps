@@ -17,18 +17,22 @@ from ..geo import EARTH_RADIUS_M
 from ..models import Flight
 from .base import FlightDataSource
 
+# Registrations below are real aircraft with photos on planespotters.net, so the
+# dashboard's photo panel shows an actual picture of the type in the demo.
+# (airline, callsign_prefix, aircraft_type, origin, destination, registration)
 _FLEET = [
-    # (airline, callsign_prefix, aircraft_type, origin, destination)
-    ("British Airways", "BAW", "A320", "LHR", "JFK"),
-    ("Lufthansa", "DLH", "B747", "FRA", "LHR"),
-    ("KLM", "KLM", "B737", "AMS", "LHR"),
-    ("Emirates", "UAE", "A380", "DXB", "LHR"),
-    ("Ryanair", "RYR", "B738", "STN", "DUB"),
-    ("Air France", "AFR", "A319", "CDG", "LHR"),
-    ("United", "UAL", "B777", "EWR", "LHR"),
-    ("Qatar Airways", "QTR", "A350", "DOH", "LHR"),
-    ("EasyJet", "EZY", "A320", "LGW", "GVA"),
-    ("Delta", "DAL", "A339", "ATL", "LHR"),
+    ("British Airways", "BAW", "A380", "LHR", "JFK", "G-XLEB"),
+    ("British Airways", "BAW", "A320", "LHR", "EDI", "G-EUYB"),
+    ("British Airways", "BAW", "B777", "LHR", "BOS", "G-VIIP"),
+    ("Lufthansa", "DLH", "A380", "FRA", "LHR", "D-AIMA"),
+    ("KLM", "KLM", "B737", "AMS", "LHR", "PH-BXA"),
+    ("Emirates", "UAE", "A380", "DXB", "LHR", "A6-EUV"),
+    ("Ryanair", "RYR", "B738", "STN", "DUB", "EI-EFZ"),
+    ("Air France", "AFR", "A319", "CDG", "LHR", "F-GRHA"),
+    ("United", "UAL", "B789", "EWR", "LHR", "N24972"),
+    ("Qatar Airways", "QTR", "A350", "DOH", "LHR", "A7-ALA"),
+    ("easyJet", "EZY", "A319", "LGW", "GVA", "G-EZBY"),
+    ("Delta", "DAL", "A333", "ATL", "LHR", "N801NW"),
 ]
 
 _COUNTRIES = [
@@ -52,11 +56,11 @@ def _offset(lat: float, lon: float, dx_m: float, dy_m: float) -> tuple[float, fl
 
 class _MockPlane:
     def __init__(self, rng: random.Random, base_lat: float, base_lon: float, radius_m: float):
-        airline, prefix, ac_type, origin, dest = rng.choice(_FLEET)
+        airline, prefix, ac_type, origin, dest, registration = rng.choice(_FLEET)
         self.airline = airline
         self.callsign = f"{prefix}{rng.randint(10, 999)}"
         self.icao24 = f"{rng.randint(0, 0xFFFFFF):06x}"
-        self.registration = "G-" + "".join(rng.choice("ABCDEFGHJKLMNPRSTVWXYZ") for _ in range(4))
+        self.registration = registration
         self.aircraft_type = ac_type
         self.origin = origin
         self.destination = dest

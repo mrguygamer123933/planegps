@@ -30,7 +30,29 @@ function mostOverhead(state) {
   return best || list[0] || null;
 }
 
+// A stylized top-view airliner silhouette, used when no real photo is found
+// (or when offline). Wide-body types get four engines / a broader wing.
+function silhouetteSVG(type) {
+  const t = (type || "").toUpperCase();
+  const wide = /^(A38|A35|A34|A33|B74|B77|B78|B76|A30)/.test(t) || t.includes("380");
+  const four = /^(A38|B74)/.test(t);
+  const wingW = wide ? 88 : 66;
+  const engines = four
+    ? `<circle cx="${100 - wingW * 0.55}" cy="118" r="5"/><circle cx="${100 - wingW * 0.30}" cy="110" r="5"/><circle cx="${100 + wingW * 0.30}" cy="110" r="5"/><circle cx="${100 + wingW * 0.55}" cy="118" r="5"/>`
+    : `<circle cx="${100 - wingW * 0.42}" cy="114" r="6"/><circle cx="${100 + wingW * 0.42}" cy="114" r="6"/>`;
+  return `
+  <svg class="ac-silhouette" viewBox="0 0 200 210" xmlns="http://www.w3.org/2000/svg" aria-label="aircraft silhouette">
+    <g fill="#9fb3d1">
+      <path d="M100 18 C104 18 106 26 106 40 L106 150 C106 165 103 178 100 190 C97 178 94 165 94 150 L94 40 C94 26 96 18 100 18 Z"/>
+      <path d="M100 92 L${100 - wingW} 128 L${100 - wingW} 136 L100 108 L${100 + wingW} 136 L${100 + wingW} 128 Z"/>
+      <path d="M100 158 L72 178 L72 183 L100 168 L128 183 L128 178 Z"/>
+      ${engines}
+    </g>
+  </svg>`;
+}
+
 let latest = null;
+let currentAcKey = null;
 
 function renderList(state) {
   const list = document.getElementById("list");
@@ -96,6 +118,57 @@ function renderLookup(state) {
       `<div class="sub">${detail}</div>`;
   } else {
     el.innerHTML = `<div class="big">Look ${compass(f.bearing_deg)}</div><div class="sub">${detail}</div>`;
+  }
+}
+
+function acInfoHTML(f) {
+  const name = f.callsign || f.registration || f.icao24;
+  const route = `${f.origin || "?"} \u2192 ${f.destination || "?"}`;
+  return (
+    `<div class="ac-title">${name} <span class="type">${f.aircraft_type || ""}</span></div>` +
+    `<div class="ac-sub">${f.airline ? f.airline + " &middot; " : ""}${route}` +
+    `${f.registration ? " &middot; " + f.registration : ""}</div>`
+  );
+}
+
+// Fill the Aircraft card with a photo of the current overhead plane (falling
+// back to a silhouette). Only refetches when the highlighted plane changes.
+async function updateAircraft(state) {
+  const el = document.getElementById("aircraft");
+  const f = mostOverhead(state);
+  if (!f) {
+    currentAcKey = null;
+    el.innerHTML = `<div class="ac-empty">No aircraft overhead &mdash; nothing to show.</div>`;
+    return;
+  }
+  const key = `${f.icao24}|${f.registration || ""}`;
+  if (key === currentAcKey) return;
+  currentAcKey = key;
+
+  // Show the silhouette immediately, then swap in a real photo if we find one.
+  el.innerHTML =
+    `<div class="ac-media">${silhouetteSVG(f.aircraft_type)}</div>` +
+    `<div class="ac-info">${acInfoHTML(f)}<div class="ac-credit">Looking for a photo&hellip;</div></div>`;
+
+  try {
+    const params = f.registration ? `?reg=${encodeURIComponent(f.registration)}` : "";
+    const r = await fetch(`/api/photo/${encodeURIComponent(f.icao24)}${params}`, { cache: "no-store" });
+    const p = await r.json();
+    if (key !== currentAcKey) return; // plane changed while we were fetching
+    if (p.available && (p.large || p.thumbnail)) {
+      const credit = p.photographer
+        ? `Photo &copy; ${p.photographer} &middot; <a href="${p.link}" target="_blank" rel="noopener">planespotters.net</a>`
+        : `Photo &middot; <a href="${p.link}" target="_blank" rel="noopener">planespotters.net</a>`;
+      el.innerHTML =
+        `<img class="ac-photo" src="${p.large || p.thumbnail}" alt="photo of ${f.aircraft_type || "aircraft"}" />` +
+        `<div class="ac-info">${acInfoHTML(f)}<div class="ac-credit">${credit}</div></div>`;
+    } else {
+      el.innerHTML =
+        `<div class="ac-media">${silhouetteSVG(f.aircraft_type)}</div>` +
+        `<div class="ac-info">${acInfoHTML(f)}<div class="ac-credit">No photo available for this aircraft.</div></div>`;
+    }
+  } catch (e) {
+    // Keep the silhouette already shown (e.g. offline).
   }
 }
 
@@ -279,6 +352,7 @@ function applyState(state) {
   }
   renderList(state);
   renderLookup(state);
+  updateAircraft(state);
 }
 
 async function poll() {

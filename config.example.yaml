@@ -35,6 +35,12 @@ display:
   web:
     host: 0.0.0.0
     port: 8080
+    # Show a photo of the overhead aircraft (via planespotters.net). Set to
+    # false to disable network photo lookups (a silhouette is shown instead).
+    photos: true
+    # planespotters requires a User-Agent with a contact URL/email. Please
+    # change this to your own project/contact before heavy use.
+    photo_user_agent: "planegps/0.1 (+https://github.com/mrguygamer123933/planegps)"
   led:
     rows: 32
     cols: 64

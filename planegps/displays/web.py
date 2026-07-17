@@ -11,11 +11,12 @@ import logging
 import os
 import threading
 
-from flask import Flask, jsonify, send_from_directory
+from flask import Flask, jsonify, request, send_from_directory
 from werkzeug.serving import make_server
 
 from ..config import Config
 from ..models import DetectionState
+from ..photos import PhotoService
 from .base import Display
 
 _ASSETS_DIR = os.path.join(os.path.dirname(__file__), "web_assets")
@@ -33,6 +34,11 @@ class WebDisplay(Display):
             radius_m=cfg.detection.radius_m,
         ).to_dict()
         self._lock = threading.Lock()
+        self._photos = (
+            PhotoService(user_agent=cfg.display.web.photo_user_agent)
+            if cfg.display.web.photos
+            else None
+        )
         self._app = self._build_app()
         self._server = None
         self._thread: threading.Thread | None = None
@@ -54,6 +60,15 @@ class WebDisplay(Display):
         def state():
             with self._lock:
                 return jsonify(self._latest)
+
+        @app.route("/api/photo/<icao24>")
+        def photo(icao24):
+            if self._photos is None:
+                return jsonify({"available": False, "disabled": True})
+            data = self._photos.lookup(icao24, request.args.get("reg"))
+            if not data:
+                return jsonify({"available": False})
+            return jsonify({"available": True, **data})
 
         @app.route("/healthz")
         def healthz():

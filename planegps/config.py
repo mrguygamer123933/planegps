@@ -8,6 +8,8 @@ from typing import Any
 
 import yaml
 
+from .photos import DEFAULT_USER_AGENT
+
 
 @dataclass
 class LocationConfig:
@@ -39,6 +41,9 @@ class DataSourceConfig:
 class WebConfig:
     host: str = "0.0.0.0"
     port: int = 8080
+    # Show a photo of the aircraft (via planespotters.net) on the dashboard.
+    photos: bool = True
+    photo_user_agent: str = DEFAULT_USER_AGENT
 
 
 @dataclass
