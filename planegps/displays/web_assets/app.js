@@ -66,6 +66,7 @@ function applyTheme(theme) {
     effective = window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
   }
   document.documentElement.setAttribute("data-theme", effective);
+  if (typeof updateMapTiles === "function") updateMapTiles();
   const icon = document.getElementById("themeIcon");
   const label = document.getElementById("themeLabel");
   if (icon && label) {
@@ -242,6 +243,139 @@ async function updateAircraft(state) {
   } catch (e) {
     // Keep the silhouette already shown (e.g. offline).
   }
+}
+
+// --- Live map (Leaflet) -----------------------------------------------------
+let map = null;
+let tileLayer = null;
+let homeMarker = null;
+let radiusCircle = null;
+let mapReady = false;
+const planeMarkers = {};
+
+function planeIconSVG(color) {
+  return (
+    `<svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true">` +
+    `<path fill="${color}" stroke="rgba(0,0,0,.35)" stroke-width="0.5" ` +
+    `d="M12 2c.6 0 1 .8 1 2v6l8 5v2l-8-2.5V19l2.5 1.8v1.2L12 22l-3.5.9v-1.2L11 19v-4.6L3 17v-2l8-5V4c0-1.2.4-2 1-2z"/>` +
+    `</svg>`
+  );
+}
+
+function planeIcon(f, isOverhead) {
+  const color = isOverhead ? cssVar("--accent") : cssVar("--plane-dim");
+  const rot = f.heading || 0;
+  return L.divIcon({
+    className: "",
+    html: `<div class="plane-marker" style="transform: rotate(${rot}deg)">${planeIconSVG(color)}</div>`,
+    iconSize: [26, 26],
+    iconAnchor: [13, 13],
+  });
+}
+
+function planePopup(f) {
+  const route = `${f.origin || "?"} \u2192 ${f.destination || "?"}`;
+  const sub = f.airline || f.origin_country || "";
+  return (
+    `<div class="pm-cs">\u2708 ${f.callsign || f.registration || f.icao24}</div>` +
+    `<div>${sub ? sub + " &middot; " : ""}${route}</div>` +
+    `<div>${f.aircraft_type || "?"} &middot; ${fmtAlt(f.altitude_m)} &middot; ${fmtMeters(f.distance_m)} away</div>`
+  );
+}
+
+function mapTileConfig() {
+  const theme = document.documentElement.getAttribute("data-theme");
+  if (theme === "light") {
+    return {
+      url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+      attribution: "&copy; OpenStreetMap contributors",
+      subdomains: "abc",
+    };
+  }
+  return {
+    url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+    attribution: "&copy; OpenStreetMap contributors &copy; CARTO",
+    subdomains: "abcd",
+  };
+}
+
+function updateMapTiles() {
+  if (!map) return;
+  const cfg = mapTileConfig();
+  if (tileLayer) map.removeLayer(tileLayer);
+  tileLayer = L.tileLayer(cfg.url, {
+    maxZoom: 19,
+    subdomains: cfg.subdomains,
+    attribution: cfg.attribution,
+  }).addTo(map);
+  // Keep the overlay colours in sync with the theme's accent palette.
+  if (homeMarker) {
+    homeMarker.setStyle({ color: cssVar("--accent-2"), fillColor: cssVar("--accent-2") });
+  }
+  if (radiusCircle) {
+    radiusCircle.setStyle({ color: cssVar("--accent"), fillColor: cssVar("--accent") });
+  }
+}
+
+function initMap(state) {
+  if (typeof L === "undefined" || map) return;
+  map = L.map("map", { zoomControl: true }).setView(
+    [state.latitude, state.longitude],
+    10
+  );
+  updateMapTiles();
+  homeMarker = L.circleMarker([state.latitude, state.longitude], {
+    radius: 6,
+    color: cssVar("--accent-2"),
+    fillColor: cssVar("--accent-2"),
+    fillOpacity: 1,
+    weight: 2,
+  })
+    .addTo(map)
+    .bindPopup("Your location: " + (state.location_name || "Home"));
+  radiusCircle = L.circle([state.latitude, state.longitude], {
+    radius: state.radius_m,
+    color: cssVar("--accent"),
+    weight: 1,
+    fillColor: cssVar("--accent"),
+    fillOpacity: 0.08,
+  }).addTo(map);
+  mapReady = true;
+  setTimeout(() => map && map.invalidateSize(), 200);
+}
+
+function updateMap(state) {
+  if (typeof L === "undefined") return;
+  if (!map) initMap(state);
+  if (!mapReady) return;
+
+  homeMarker.setLatLng([state.latitude, state.longitude]);
+  radiusCircle.setLatLng([state.latitude, state.longitude]);
+  radiusCircle.setRadius(state.radius_m);
+
+  const seen = new Set();
+  (state.nearby || []).forEach((f) => {
+    if (f.latitude == null || f.longitude == null) return;
+    seen.add(f.icao24);
+    const isOverhead = f.distance_m != null && f.distance_m <= state.radius_m;
+    let m = planeMarkers[f.icao24];
+    if (!m) {
+      m = L.marker([f.latitude, f.longitude], { icon: planeIcon(f, isOverhead) });
+      m.bindPopup(planePopup(f));
+      m.addTo(map);
+      planeMarkers[f.icao24] = m;
+    } else {
+      m.setLatLng([f.latitude, f.longitude]);
+      m.setIcon(planeIcon(f, isOverhead));
+      m.setPopupContent(planePopup(f));
+    }
+  });
+  Object.keys(planeMarkers).forEach((k) => {
+    if (!seen.has(k)) {
+      map.removeLayer(planeMarkers[k]);
+      delete planeMarkers[k];
+    }
+  });
 }
 
 // Sky dome: center = straight up (zenith), edge = horizon. Shows which way and
@@ -427,6 +561,7 @@ function applyState(state) {
   renderList(state);
   renderLookup(state);
   updateAircraft(state);
+  updateMap(state);
 }
 
 async function poll() {

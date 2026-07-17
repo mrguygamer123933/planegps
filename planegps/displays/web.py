@@ -56,6 +56,10 @@ class WebDisplay(Display):
         def appjs():
             return send_from_directory(_ASSETS_DIR, "app.js")
 
+        @app.route("/vendor/<path:filename>")
+        def vendor(filename):
+            return send_from_directory(os.path.join(_ASSETS_DIR, "vendor"), filename)
+
         @app.route("/api/state")
         def state():
             with self._lock:

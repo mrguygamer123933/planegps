@@ -4,6 +4,8 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>planegps &mdash; planes overhead</title>
+    <link rel="stylesheet" href="/vendor/leaflet/leaflet.css" />
+    <script src="/vendor/leaflet/leaflet.js"></script>
     <script>
       // Apply the saved theme before first paint to avoid a flash of the wrong
       // colours. Falls back to dark until the server default is fetched.
@@ -88,6 +90,14 @@
 
       #radar, #sky { width: 100%; height: auto; display: block; }
 
+      #map { width: 100%; height: 440px; border-radius: 12px; border: 1px solid var(--edge); background: var(--panel); z-index: 0; }
+      .leaflet-container { background: var(--panel); font: inherit; }
+      .plane-marker { transition: transform .3s linear; }
+      .plane-marker svg { display: block; filter: drop-shadow(0 0 2px rgba(0,0,0,.5)); }
+      .home-dot { }
+      .leaflet-popup-content { margin: 10px 12px; font-size: 13px; line-height: 1.5; }
+      .leaflet-popup-content .pm-cs { font-weight: 700; font-size: 15px; }
+
       .lookup-card { background: linear-gradient(90deg, rgba(52,211,153,.14), rgba(56,189,248,.05)); border-color: rgba(52,211,153,.35); }
       .lookup-hint .big { font-size: 30px; font-weight: 800; color: var(--accent); letter-spacing: .5px; }
       .lookup-hint .sub { color: var(--text); font-size: 15px; margin-top: 6px; }
@@ -156,6 +166,10 @@
             <h2>Radar &mdash; map position</h2>
             <canvas id="radar" width="440" height="440"></canvas>
           </div>
+        </div>
+        <div class="card map-card">
+          <h2>Map &mdash; live positions</h2>
+          <div id="map"></div>
         </div>
         <div class="card aircraft-card">
           <h2>Aircraft</h2>
