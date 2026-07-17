@@ -52,9 +52,10 @@ class WebDisplay(Display):
         logging.getLogger("werkzeug").setLevel(logging.WARNING)
 
         def _no_cache(resp):
-            # The dashboard HTML/JS change with releases; always revalidate so
+            # The dashboard HTML/JS change with releases; never cache so
             # browsers don't run a stale bundle.
-            resp.headers["Cache-Control"] = "no-cache, max-age=0"
+            resp.headers["Cache-Control"] = "no-store, no-cache, max-age=0"
+            resp.headers["Pragma"] = "no-cache"
             return resp
 
         @app.route("/")
