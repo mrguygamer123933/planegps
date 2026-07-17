@@ -85,7 +85,8 @@ function renderLookup(state) {
   }
   const elev = f.elevation_deg;
   const name = f.callsign || f.registration || f.icao24;
-  const detail = `<b>${name}</b> ${f.aircraft_type ? "(" + f.aircraft_type + ")" : ""} &middot; ${f.route} &middot; ${fmtAlt(f.altitude_m)} up &middot; ${fmtMeters(f.distance_m)} away`;
+  const route = `${f.origin || "?"} \u2192 ${f.destination || "?"}`;
+  const detail = `<b>${name}</b> ${f.aircraft_type ? "(" + f.aircraft_type + ")" : ""} &middot; ${route} &middot; ${fmtAlt(f.altitude_m)} up &middot; ${fmtMeters(f.distance_m)} away`;
   el.className = "lookup-hint";
   if (elev != null && elev >= 80) {
     el.innerHTML = `<div class="big">&#8593; Straight up!</div><div class="sub">${detail}</div>`;

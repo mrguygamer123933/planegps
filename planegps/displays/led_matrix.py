@@ -63,13 +63,15 @@ class LedMatrixDisplay(Display):
         f = state.overhead[0]
         # Three lines fit cleanly on a 32px-tall panel with the default font.
         d.text((1, 0), (f.callsign or f.icao24)[:10], fill=_ACCENT)
-        d.text((1, 10), f.route[:12], fill=_TEXT)
+        route = f"{f.origin or '?'}>{f.destination or '?'}"
+        d.text((1, 10), route[:12], fill=_TEXT)
         direction = bearing_to_compass(f.bearing_deg) if f.bearing_deg is not None else "?"
         # Show where to look: compass direction + angle above the horizon.
+        # Keep it ASCII: the default bitmap font lacks arrow/degree glyphs.
         if f.elevation_deg is not None and f.elevation_deg >= 80:
-            look = "UP \u2191"
+            look = "UP"
         elif f.elevation_deg is not None:
-            look = f"{direction} {f.elevation_deg:.0f}\u00b0"
+            look = f"{direction}{f.elevation_deg:.0f}"
         else:
             look = direction
         dist = f"{f.distance_m:.0f}m" if f.distance_m is not None else "?"
