@@ -114,6 +114,10 @@
       .aircraft .ac-credit { color: var(--muted); font-size: 12px; margin-top: 10px; }
       .aircraft .ac-credit a { color: var(--accent); text-decoration: none; }
       .aircraft .ac-empty { color: var(--muted); padding: 20px 0; }
+
+      .led-wrap { background: #090b12; border: 1px solid var(--edge); border-radius: 10px; padding: 12px; display: flex; justify-content: center; }
+      .led-img { width: 100%; max-width: 560px; height: auto; image-rendering: auto; display: block; }
+      .led-note { color: var(--muted); font-size: 12px; margin-top: 10px; }
       @media (max-width: 560px) { .aircraft { flex-direction: column; align-items: flex-start; } .aircraft .ac-photo, .aircraft .ac-silhouette { max-width: 100%; width: 100%; } }
 
       .list { display: flex; flex-direction: column; gap: 10px; max-height: 70vh; overflow-y: auto; }
@@ -176,6 +180,11 @@
           <div id="aircraft" class="aircraft">
             <div class="ac-empty">Waiting for data&hellip;</div>
           </div>
+        </div>
+        <div class="card led-card">
+          <h2>LED board &mdash; live preview</h2>
+          <div class="led-wrap"><img id="ledimg" class="led-img" alt="LED board preview" /></div>
+          <div class="led-note">This is what a 64&times;32 RGB LED matrix (e.g. on a Raspberry Pi) shows. Run <code>--display web,led</code> to drive both at once.</div>
         </div>
       </section>
 

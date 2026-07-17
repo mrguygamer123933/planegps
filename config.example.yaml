@@ -31,6 +31,7 @@ display:
   # web     -> browser dashboard (monitor)
   # console -> plain text (terminal / headless)
   # led     -> RGB LED matrix on a Raspberry Pi (writes led_preview.png elsewhere)
+  # Combine several with commas to run them at once, e.g. "web,led".
   backend: web
   web:
     host: 0.0.0.0

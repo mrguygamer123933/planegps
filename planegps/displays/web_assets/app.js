@@ -245,6 +245,12 @@ async function updateAircraft(state) {
   }
 }
 
+// Refresh the LED-board preview image (rendered server-side from live state).
+function updateLed() {
+  const img = document.getElementById("ledimg");
+  if (img) img.src = "/led-preview.png?t=" + Date.now();
+}
+
 // --- Live map (Leaflet) -----------------------------------------------------
 let map = null;
 let tileLayer = null;
@@ -562,6 +568,7 @@ function applyState(state) {
   renderLookup(state);
   updateAircraft(state);
   updateMap(state);
+  updateLed();
 }
 
 async function poll() {

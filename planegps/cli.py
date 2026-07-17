@@ -29,8 +29,8 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--display",
-        choices=["web", "console", "led"],
-        help="Output backend.",
+        help="Output backend(s): web, console, or led. Combine with a comma to "
+        "run several at once, e.g. 'web,led'.",
     )
     parser.add_argument("--port", type=int, help="Port for the web display.")
     parser.add_argument(

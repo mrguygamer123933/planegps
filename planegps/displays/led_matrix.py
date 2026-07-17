@@ -9,17 +9,10 @@ inspected without hardware.
 
 from __future__ import annotations
 
-from PIL import Image, ImageDraw
-
 from ..config import Config
-from ..geo import bearing_to_compass
+from ..led_render import render_led_frame, render_led_preview
 from ..models import DetectionState
 from .base import Display
-
-_BG = (5, 7, 13)
-_ACCENT = (52, 211, 153)
-_TEXT = (230, 237, 247)
-_MUTED = (124, 138, 165)
 
 
 class LedMatrixDisplay(Display):
@@ -50,41 +43,11 @@ class LedMatrixDisplay(Display):
                 f"{self.cfg.display.led.preview_path}"
             )
 
-    def _draw(self, state: DetectionState) -> Image.Image:
-        img = Image.new("RGB", (self.cols, self.rows), _BG)
-        d = ImageDraw.Draw(img)
-        if state.error:
-            d.text((1, 1), "ERR", fill=(245, 158, 11))
-            return img
-        if not state.overhead:
-            d.text((1, 1), "NO PLANES", fill=_MUTED)
-            d.text((1, self.rows // 2), state.location_name[:10], fill=_MUTED)
-            return img
-        f = state.overhead[0]
-        # Three lines fit cleanly on a 32px-tall panel with the default font.
-        d.text((1, 0), (f.callsign or f.icao24)[:10], fill=_ACCENT)
-        route = f"{f.origin or '?'}>{f.destination or '?'}"
-        d.text((1, 10), route[:12], fill=_TEXT)
-        direction = bearing_to_compass(f.bearing_deg) if f.bearing_deg is not None else "?"
-        # Show where to look: compass direction + angle above the horizon.
-        # Keep it ASCII: the default bitmap font lacks arrow/degree glyphs.
-        if f.elevation_deg is not None and f.elevation_deg >= 80:
-            look = "UP"
-        elif f.elevation_deg is not None:
-            look = f"{direction}{f.elevation_deg:.0f}"
-        else:
-            look = direction
-        dist = f"{f.distance_m:.0f}m" if f.distance_m is not None else "?"
-        d.text((1, 21), f"{look} {dist}", fill=_MUTED)
-        return img
-
     def render(self, state: DetectionState) -> None:
-        img = self._draw(state)
         if self._matrix is not None:  # pragma: no cover - hardware path
-            self._canvas.SetImage(img.convert("RGB"))
+            frame = render_led_frame(state, self.rows, self.cols)
+            self._canvas.SetImage(frame.convert("RGB"))
             self._canvas = self._matrix.SwapOnVSync(self._canvas)
         else:
-            # Upscale so the preview is easy to see, keeping crisp pixels.
-            scale = 12
-            preview = img.resize((self.cols * scale, self.rows * scale), Image.NEAREST)
+            preview = render_led_preview(state, self.rows, self.cols)
             preview.save(self.cfg.display.led.preview_path)

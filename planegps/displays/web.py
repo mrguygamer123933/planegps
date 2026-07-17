@@ -7,14 +7,16 @@ via ``/api/state``.
 
 from __future__ import annotations
 
+import io
 import logging
 import os
 import threading
 
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, Response, jsonify, request, send_from_directory
 from werkzeug.serving import make_server
 
 from ..config import Config
+from ..led_render import render_led_preview
 from ..models import DetectionState
 from ..photos import PhotoService
 from .base import Display
@@ -27,12 +29,13 @@ class WebDisplay(Display):
 
     def __init__(self, cfg: Config) -> None:
         super().__init__(cfg)
-        self._latest: dict = DetectionState(
+        self._latest_state = DetectionState(
             location_name=cfg.location.name,
             latitude=cfg.location.latitude,
             longitude=cfg.location.longitude,
             radius_m=cfg.detection.radius_m,
-        ).to_dict()
+        )
+        self._latest: dict = self._latest_state.to_dict()
         self._lock = threading.Lock()
         self._photos = (
             PhotoService(user_agent=cfg.display.web.photo_user_agent)
@@ -78,6 +81,17 @@ class WebDisplay(Display):
         def client_config():
             return jsonify({"theme": self.cfg.display.web.theme})
 
+        @app.route("/led-preview.png")
+        def led_preview():
+            with self._lock:
+                state = self._latest_state
+            img = render_led_preview(
+                state, self.cfg.display.led.rows, self.cfg.display.led.cols
+            )
+            buf = io.BytesIO()
+            img.save(buf, format="PNG")
+            return Response(buf.getvalue(), mimetype="image/png")
+
         @app.route("/healthz")
         def healthz():
             return jsonify({"ok": True})
@@ -95,6 +109,7 @@ class WebDisplay(Display):
 
     def render(self, state: DetectionState) -> None:
         with self._lock:
+            self._latest_state = state
             self._latest = state.to_dict()
 
     def stop(self) -> None:
