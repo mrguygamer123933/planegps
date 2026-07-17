@@ -2,6 +2,7 @@
 
 Detect the aircraft flying over your house and show **what** they are, **where they're from**, and **where they're going** — on a monitor or an RGB LED board. Runs locally on a PC or a Raspberry Pi.
 
+- **Light & dark themes** – the web dashboard ships with both; viewers can toggle in the UI (remembered per browser) and you can set the default (`display.web.theme: dark | light | auto`).
 - **"Look up" guidance** – tells you where to point your eyes to physically spot the plane: the compass direction and the elevation angle above the horizon (a sky‑view dome shows this at a glance).
 - **Customizable radius** – define a circle of any size around the device (default 3 km, set it to 200 m if you only want planes almost directly overhead).
 - **Multiple data sources** – OpenSky Network (free), FlightRadar24 (optional), or a built‑in offline **mock** source for demos/testing.
@@ -40,7 +41,7 @@ Anything omitted uses a sensible default. Key settings:
 | `display.backend` | `web`, `console`, or `led`. |
 | `display.led.rows/cols` | LED panel geometry (default 32×64). |
 
-CLI flags (`--lat`, `--lon`, `--radius`, `--provider`, `--display`, `--port`, `--interval`, `--name`) and `PLANEGPS_*` environment variables override the file.
+CLI flags (`--lat`, `--lon`, `--radius`, `--provider`, `--display`, `--port`, `--interval`, `--name`, `--theme`) and `PLANEGPS_*` environment variables override the file.
 
 ## Data sources
 
@@ -58,6 +59,8 @@ CLI flags (`--lat`, `--lon`, `--radius`, `--provider`, `--display`, `--port`, `-
   - a live list with route, aircraft type, altitude, distance, direction, and elevation ("up") angle.
 
   Photo lookups can be disabled with `display.web.photos: false`. planespotters requires a `User-Agent` containing a contact URL/email — set `display.web.photo_user_agent` to your own before heavy use.
+
+  The dashboard has a **light/dark theme toggle** in the header (remembered per browser). Set the default with `display.web.theme` (`dark`, `light`, or `auto`) or the `--theme` flag.
 - **console** – plain‑text output; great for headless boxes and logs.
 - **led** – renders each frame for an RGB LED matrix. On a Raspberry Pi with the [`rpi-rgb-led-matrix`](https://github.com/hzeller/rpi-rgb-led-matrix) Python bindings it drives the panel; elsewhere it writes `led_preview.png` so you can see exactly what the panel would show.
 
