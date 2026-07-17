@@ -2,6 +2,7 @@
 
 Detect the aircraft flying over your house and show **what** they are, **where they're from**, and **where they're going** — on a monitor or an RGB LED board. Runs locally on a PC or a Raspberry Pi.
 
+- **Live map** – a Flightradar24‑style interactive map (Leaflet + OpenStreetMap/CARTO tiles) with plane markers at their real positions, your location, and the detection‑radius circle. Click a plane for its details.
 - **Light & dark themes** – the web dashboard ships with both; viewers can toggle in the UI (remembered per browser) and you can set the default (`display.web.theme: dark | light | auto`).
 - **"Look up" guidance** – tells you where to point your eyes to physically spot the plane: the compass direction and the elevation angle above the horizon (a sky‑view dome shows this at a glance).
 - **Customizable radius** – define a circle of any size around the device (default 3 km, set it to 200 m if you only want planes almost directly overhead).
@@ -55,6 +56,7 @@ CLI flags (`--lat`, `--lon`, `--radius`, `--provider`, `--display`, `--port`, `-
   - a **"Look up"** hint telling you exactly where to point your eyes, e.g. *"Look SE ↗ 75° up"* or *"Straight up!"*;
   - a **sky view** dome (center = straight up / zenith, edge = horizon) so you can see how high in the sky and in which compass direction to look;
   - a top-down **radar** of each plane's map position;
+  - a **live map** (Leaflet + OpenStreetMap/CARTO) with plane-shaped markers at real coordinates, your location, the radius circle, and click-for-details popups (needs internet for map tiles; Leaflet itself is bundled);
   - an **aircraft photo** of the overhead plane (via [planespotters.net](https://www.planespotters.net/photo/api)), with a silhouette fallback when offline or when no photo exists; and
   - a live list with route, aircraft type, altitude, distance, direction, and elevation ("up") angle.
 
