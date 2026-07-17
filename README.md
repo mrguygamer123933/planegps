@@ -39,7 +39,7 @@ Anything omitted uses a sensible default. Key settings:
 | `detection.max_altitude_m` | Optional ceiling to ignore high cruising traffic. |
 | `data_source.provider` | `mock`, `opensky`, or `flightradar24`. |
 | `data_source.poll_interval_s` | How often to refresh. |
-| `display.backend` | `web`, `console`, or `led`. |
+| `display.backend` | `web`, `console`, `led`, or a comma-separated combo like `web,led`. |
 | `display.led.rows/cols` | LED panel geometry (default 32×64). |
 
 CLI flags (`--lat`, `--lon`, `--radius`, `--provider`, `--display`, `--port`, `--interval`, `--name`, `--theme`) and `PLANEGPS_*` environment variables override the file.
@@ -64,7 +64,17 @@ CLI flags (`--lat`, `--lon`, `--radius`, `--provider`, `--display`, `--port`, `-
 
   The dashboard has a **light/dark theme toggle** in the header (remembered per browser). Set the default with `display.web.theme` (`dark`, `light`, or `auto`) or the `--theme` flag.
 - **console** – plain‑text output; great for headless boxes and logs.
-- **led** – renders each frame for an RGB LED matrix. On a Raspberry Pi with the [`rpi-rgb-led-matrix`](https://github.com/hzeller/rpi-rgb-led-matrix) Python bindings it drives the panel; elsewhere it writes `led_preview.png` so you can see exactly what the panel would show.
+- **led** – renders each frame for an RGB LED matrix. On a Raspberry Pi with the [`rpi-rgb-led-matrix`](https://github.com/hzeller/rpi-rgb-led-matrix) Python bindings it drives the panel; elsewhere it writes an `led_preview.png` "board sketch" (round glowing LEDs on a bezel) so you can see exactly what the panel would show. The web dashboard also embeds this LED board as a live preview panel.
+
+### Running several displays at once
+
+`--display` accepts a comma-separated list, so you can drive a monitor **and** an LED board from the same device:
+
+```bash
+planegps --provider opensky --display web,led
+```
+
+Each backend renders every update independently (the web server keeps running while the LED panel refreshes).
 
 ## Development
 
