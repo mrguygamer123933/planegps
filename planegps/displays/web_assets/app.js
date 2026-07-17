@@ -60,26 +60,60 @@ function themeColors() {
 }
 
 // --- Theme toggle -----------------------------------------------------------
+// The button cycles through three themes, bouncing at the ends:
+// dark -> gray -> light -> gray -> dark -> ...
+const THEME_ORDER = ["dark", "gray", "light"];
+const THEME_META = {
+  dark: { icon: "\u263D", label: "Dark" }, // moon
+  gray: { icon: "\u25D0", label: "Gray" }, // half circle
+  light: { icon: "\u2600", label: "Light" }, // sun
+};
+let themeDir = 1;
+
 function applyTheme(theme) {
   let effective = theme;
   if (theme === "auto") {
     effective = window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
   }
+  if (!THEME_META[effective]) effective = "dark";
   document.documentElement.setAttribute("data-theme", effective);
   if (typeof updateMapTiles === "function") updateMapTiles();
   const icon = document.getElementById("themeIcon");
   const label = document.getElementById("themeLabel");
   if (icon && label) {
-    icon.innerHTML = effective === "light" ? "\u2600" : "\u263D";
-    label.textContent = effective === "light" ? "Light" : "Dark";
+    icon.innerHTML = THEME_META[effective].icon;
+    label.textContent = THEME_META[effective].label;
   }
+}
+
+function nextTheme() {
+  let idx = THEME_ORDER.indexOf(document.documentElement.getAttribute("data-theme"));
+  if (idx === -1) idx = 0;
+  // Reverse direction at either end so it bounces dark<->gray<->light.
+  if (idx + themeDir < 0 || idx + themeDir > THEME_ORDER.length - 1) {
+    themeDir = -themeDir;
+  }
+  idx += themeDir;
+  const next = THEME_ORDER[idx];
+  try {
+    localStorage.setItem("planegps-theme", next);
+    localStorage.setItem("planegps-theme-dir", String(themeDir));
+  } catch (e) {}
+  applyTheme(next);
 }
 
 function initTheme() {
   let saved = null;
+  let savedDir = null;
   try {
     saved = localStorage.getItem("planegps-theme");
+    savedDir = localStorage.getItem("planegps-theme-dir");
   } catch (e) {}
+  if (savedDir === "-1" || savedDir === "1") {
+    themeDir = parseInt(savedDir, 10);
+  } else if (saved === "light") {
+    themeDir = -1; // at the top end, next press should go back down
+  }
   applyTheme(saved || "dark");
   // If the user hasn't chosen, adopt the server's configured default.
   if (!saved) {
@@ -91,16 +125,7 @@ function initTheme() {
       .catch(() => {});
   }
   const btn = document.getElementById("themeToggle");
-  if (btn) {
-    btn.addEventListener("click", () => {
-      const current = document.documentElement.getAttribute("data-theme");
-      const next = current === "light" ? "dark" : "light";
-      try {
-        localStorage.setItem("planegps-theme", next);
-      } catch (e) {}
-      applyTheme(next);
-    });
-  }
+  if (btn) btn.addEventListener("click", nextTheme);
 }
 
 // A stylized top-view airliner silhouette, used when no real photo is found
@@ -296,6 +321,13 @@ function mapTileConfig() {
       url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
       attribution: "&copy; OpenStreetMap contributors",
       subdomains: "abc",
+    };
+  }
+  if (theme === "gray") {
+    return {
+      url: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+      attribution: "&copy; OpenStreetMap contributors &copy; CARTO",
+      subdomains: "abcd",
     };
   }
   return {

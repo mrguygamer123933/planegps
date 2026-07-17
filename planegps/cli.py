@@ -35,7 +35,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--port", type=int, help="Port for the web display.")
     parser.add_argument(
         "--theme",
-        choices=["dark", "light", "auto"],
+        choices=["dark", "gray", "light", "auto"],
         help="Default web dashboard theme.",
     )
     parser.add_argument("--interval", type=float, help="Poll interval in seconds.")

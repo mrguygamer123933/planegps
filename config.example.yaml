@@ -42,8 +42,9 @@ display:
     # planespotters requires a User-Agent with a contact URL/email. Please
     # change this to your own project/contact before heavy use.
     photo_user_agent: "planegps/0.1 (+https://github.com/mrguygamer123933/planegps)"
-    # Default dashboard theme: "dark", "light", or "auto" (follow the browser).
-    # Viewers can toggle it in the UI; their choice is remembered per browser.
+    # Default dashboard theme: "dark", "gray", "light", or "auto" (follow the
+    # browser). The header button cycles dark -> gray -> light and back; the
+    # viewer's choice is remembered per browser.
     theme: dark
   led:
     rows: 32
