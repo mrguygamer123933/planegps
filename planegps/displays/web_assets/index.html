@@ -38,14 +38,22 @@
       .dot { display:inline-block; width:8px; height:8px; border-radius:50%; background: var(--accent); margin-right:6px; box-shadow:0 0 8px var(--accent); }
       .dot.stale { background: var(--warn); box-shadow:0 0 8px var(--warn); }
 
-      main { display: grid; grid-template-columns: minmax(360px, 1fr) minmax(360px, 520px); gap: 20px; padding: 20px; flex: 1; }
+      main { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(320px, 1fr); gap: 20px; padding: 20px; flex: 1; }
+      .left { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+      .views { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+      @media (max-width: 1100px) { .views { grid-template-columns: 1fr; } }
       @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
 
       .card { background: linear-gradient(180deg, var(--panel-2), var(--panel)); border: 1px solid var(--edge); border-radius: 16px; padding: 16px; }
       .card h2 { margin: 0 0 12px; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
 
-      .radar-wrap { display:flex; align-items:center; justify-content:center; }
-      #radar { width: 100%; max-width: 520px; height: auto; }
+      #radar, #sky { width: 100%; height: auto; display: block; }
+
+      .lookup-card { background: linear-gradient(90deg, rgba(52,211,153,.14), rgba(56,189,248,.05)); border-color: rgba(52,211,153,.35); }
+      .lookup-hint .big { font-size: 30px; font-weight: 800; color: var(--accent); letter-spacing: .5px; }
+      .lookup-hint .sub { color: var(--text); font-size: 15px; margin-top: 6px; }
+      .lookup-hint .sub b { color: var(--accent-2); }
+      .lookup-hint.idle .big { color: var(--muted); font-size: 22px; }
 
       .list { display: flex; flex-direction: column; gap: 10px; max-height: 70vh; overflow-y: auto; }
       .flight { border: 1px solid var(--edge); border-radius: 12px; padding: 12px 14px; background: rgba(9,14,24,.6); }
@@ -78,10 +86,22 @@
     </header>
 
     <main>
-      <section class="card radar-wrap">
-        <div style="width:100%">
-          <h2>Radar</h2>
-          <canvas id="radar" width="520" height="520"></canvas>
+      <section class="left">
+        <div class="card lookup-card">
+          <h2>Look up &#8593;</h2>
+          <div id="lookup" class="lookup-hint idle">
+            <div class="big">Waiting for data&hellip;</div>
+          </div>
+        </div>
+        <div class="views">
+          <div class="card">
+            <h2>Sky view &mdash; where to look</h2>
+            <canvas id="sky" width="440" height="440"></canvas>
+          </div>
+          <div class="card">
+            <h2>Radar &mdash; map position</h2>
+            <canvas id="radar" width="440" height="440"></canvas>
+          </div>
         </div>
       </section>
 

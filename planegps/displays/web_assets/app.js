@@ -19,6 +19,17 @@ function fmtSpeed(ms) {
   return Math.round(ms * 3.6) + " km/h";
 }
 
+// The plane that is highest in the sky (closest to straight overhead).
+function mostOverhead(state) {
+  const list = state.overhead || [];
+  let best = null;
+  for (const f of list) {
+    if (f.elevation_deg == null) continue;
+    if (!best || f.elevation_deg > best.elevation_deg) best = f;
+  }
+  return best || list[0] || null;
+}
+
 let latest = null;
 
 function renderList(state) {
@@ -50,11 +61,108 @@ function renderList(state) {
           <span>Dist <b>${fmtMeters(f.distance_m)}</b></span>
           <span>Alt <b>${fmtAlt(f.altitude_m)}</b></span>
           <span>Dir <b>${dir}</b></span>
+          <span>Up <b>${f.elevation_deg != null ? Math.round(f.elevation_deg) + "\u00b0" : "?"}</b></span>
           <span>Speed <b>${fmtSpeed(f.ground_speed_ms)}</b></span>
         </div>
       </div>`;
     })
     .join("");
+}
+
+function renderLookup(state) {
+  const el = document.getElementById("lookup");
+  if (state.error) {
+    el.className = "lookup-hint idle";
+    el.innerHTML = `<div class="big err">Data source error</div>`;
+    return;
+  }
+  const f = mostOverhead(state);
+  if (!f) {
+    el.className = "lookup-hint idle";
+    el.innerHTML = `<div class="big">No plane overhead right now</div>
+      <div class="sub">Nothing to look up at &mdash; watching ${state.nearby.length} aircraft nearby.</div>`;
+    return;
+  }
+  const elev = f.elevation_deg;
+  const name = f.callsign || f.registration || f.icao24;
+  const detail = `<b>${name}</b> ${f.aircraft_type ? "(" + f.aircraft_type + ")" : ""} &middot; ${f.route} &middot; ${fmtAlt(f.altitude_m)} up &middot; ${fmtMeters(f.distance_m)} away`;
+  el.className = "lookup-hint";
+  if (elev != null && elev >= 80) {
+    el.innerHTML = `<div class="big">&#8593; Straight up!</div><div class="sub">${detail}</div>`;
+  } else if (elev != null) {
+    el.innerHTML =
+      `<div class="big">Look ${compass(f.bearing_deg)} &#8599; ${Math.round(elev)}&deg; up</div>` +
+      `<div class="sub">${detail}</div>`;
+  } else {
+    el.innerHTML = `<div class="big">Look ${compass(f.bearing_deg)}</div><div class="sub">${detail}</div>`;
+  }
+}
+
+// Sky dome: center = straight up (zenith), edge = horizon. Shows which way and
+// how high in the sky to look to physically see the plane above you.
+function drawSky(state) {
+  const canvas = document.getElementById("sky");
+  const ctx = canvas.getContext("2d");
+  const W = canvas.width, H = canvas.height;
+  const cx = W / 2, cy = H / 2;
+  const R = Math.min(W, H) / 2 - 18;
+  ctx.clearRect(0, 0, W, H);
+
+  // Elevation rings (0 deg at edge -> 90 deg at center).
+  ctx.strokeStyle = "#1e2c45";
+  ctx.fillStyle = "#7c8aa5";
+  ctx.font = "11px system-ui";
+  ctx.textAlign = "left";
+  for (const elev of [0, 30, 60]) {
+    const r = ((90 - elev) / 90) * R;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillText(elev + "\u00b0", cx + 3, cy - r + 12);
+  }
+  // Compass labels around the horizon.
+  ctx.fillStyle = "#7c8aa5";
+  ctx.textAlign = "center";
+  ctx.fillText("N", cx, cy - R - 5);
+  ctx.fillText("S", cx, cy + R + 13);
+  ctx.fillText("E", cx + R + 9, cy + 4);
+  ctx.fillText("W", cx - R - 9, cy + 4);
+
+  // Zenith marker (straight up).
+  ctx.fillStyle = "#38bdf8";
+  ctx.beginPath();
+  ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#7c8aa5";
+  ctx.fillText("UP", cx, cy - 8);
+  ctx.textAlign = "left";
+
+  const top = mostOverhead(state);
+  const plot = (f, isTop) => {
+    if (f.bearing_deg == null || f.elevation_deg == null) return;
+    const rr = ((90 - Math.max(0, Math.min(90, f.elevation_deg))) / 90) * R;
+    const a = (f.bearing_deg - 90) * (Math.PI / 180);
+    const x = cx + Math.cos(a) * rr;
+    const y = cy + Math.sin(a) * rr;
+    if (isTop) {
+      // guide line from zenith toward the plane's azimuth
+      ctx.strokeStyle = "rgba(52,211,153,.5)";
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(x, y);
+      ctx.stroke();
+    }
+    ctx.fillStyle = isTop ? "#34d399" : "#9fb3d1";
+    ctx.beginPath();
+    ctx.arc(x, y, isTop ? 6 : 3, 0, Math.PI * 2);
+    ctx.fill();
+    if (isTop) {
+      ctx.fillStyle = "#e6edf7";
+      ctx.font = "12px system-ui";
+      ctx.fillText(f.callsign || f.icao24, x + 9, y - 7);
+    }
+  };
+  (state.overhead || []).forEach((f) => plot(f, top && f.icao24 === top.icao24));
 }
 
 function drawRadar(state) {
@@ -169,6 +277,7 @@ function applyState(state) {
     status.textContent = "live";
   }
   renderList(state);
+  renderLookup(state);
 }
 
 async function poll() {
@@ -183,7 +292,10 @@ async function poll() {
 }
 
 function loop() {
-  if (latest) drawRadar(latest);
+  if (latest) {
+    drawSky(latest);
+    drawRadar(latest);
+  }
   requestAnimationFrame(loop);
 }
 

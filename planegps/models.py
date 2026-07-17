@@ -35,6 +35,7 @@ class Flight:
     # Populated by the detector relative to the configured location.
     distance_m: float | None = None
     bearing_deg: float | None = None
+    elevation_deg: float | None = None  # angle above the horizon (90 = overhead)
 
     @property
     def label(self) -> str:

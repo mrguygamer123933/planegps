@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from .config import Config
-from .geo import bearing_deg, haversine_m
+from .geo import bearing_deg, elevation_deg, haversine_m
 from .models import DetectionState, Flight
 from .sources.base import FlightDataSource
 
@@ -30,6 +30,8 @@ class Detector:
             flight.latitude,
             flight.longitude,
         )
+        if flight.altitude_m is not None:
+            flight.elevation_deg = elevation_deg(flight.distance_m, flight.altitude_m)
         return flight
 
     def _altitude_ok(self, flight: Flight) -> bool:

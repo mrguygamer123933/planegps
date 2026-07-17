@@ -25,6 +25,16 @@ def bearing_deg(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     return (math.degrees(math.atan2(x, y)) + 360.0) % 360.0
 
 
+def elevation_deg(horizontal_m: float, altitude_m: float) -> float:
+    """Angle of a plane above the horizon as seen from the device, in degrees.
+
+    ``0`` means on the horizon, ``90`` means directly overhead. Assumes the
+    observer is at ground level. ``horizontal_m`` is the ground distance to the
+    point below the aircraft and ``altitude_m`` its height above the ground.
+    """
+    return math.degrees(math.atan2(altitude_m, max(horizontal_m, 0.0)))
+
+
 def bearing_to_compass(bearing: float) -> str:
     """Convert a bearing in degrees to an 8-point compass label."""
     points = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]

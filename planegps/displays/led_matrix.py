@@ -65,8 +65,15 @@ class LedMatrixDisplay(Display):
         d.text((1, 0), (f.callsign or f.icao24)[:10], fill=_ACCENT)
         d.text((1, 10), f.route[:12], fill=_TEXT)
         direction = bearing_to_compass(f.bearing_deg) if f.bearing_deg is not None else "?"
+        # Show where to look: compass direction + angle above the horizon.
+        if f.elevation_deg is not None and f.elevation_deg >= 80:
+            look = "UP \u2191"
+        elif f.elevation_deg is not None:
+            look = f"{direction} {f.elevation_deg:.0f}\u00b0"
+        else:
+            look = direction
         dist = f"{f.distance_m:.0f}m" if f.distance_m is not None else "?"
-        d.text((1, 21), f"{(f.aircraft_type or '?')[:4]} {direction} {dist}", fill=_MUTED)
+        d.text((1, 21), f"{look} {dist}", fill=_MUTED)
         return img
 
     def render(self, state: DetectionState) -> None:

@@ -23,6 +23,16 @@ def _fmt_dir(f: Flight) -> str:
     return f"{bearing_to_compass(f.bearing_deg)} ({f.bearing_deg:.0f}\u00b0)"
 
 
+def _look_up(f: Flight) -> str:
+    """A human instruction for where to look in the sky to spot the plane."""
+    if f.bearing_deg is None or f.elevation_deg is None:
+        return ""
+    if f.elevation_deg >= 80:
+        return "look straight up \u2191 (almost directly overhead)"
+    compass = bearing_to_compass(f.bearing_deg)
+    return f"look {compass} \u2191 {f.elevation_deg:.0f}\u00b0 above the horizon"
+
+
 class ConsoleDisplay(Display):
     name = "console"
 
@@ -46,4 +56,7 @@ class ConsoleDisplay(Display):
                 f"      type={f.aircraft_type or '?':<6} "
                 f"alt={_fmt_alt(f):<10} dist={_fmt_dist(f):<10} dir={_fmt_dir(f)}"
             )
+            hint = _look_up(f)
+            if hint:
+                print(f"      \U0001f440 {hint}")
         print(f"  ({len(state.nearby)} aircraft in the wider area)")

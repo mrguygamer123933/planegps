@@ -2,6 +2,7 @@ from planegps.geo import (
     bearing_deg,
     bearing_to_compass,
     bounding_box,
+    elevation_deg,
     haversine_m,
 )
 
@@ -29,6 +30,21 @@ def test_bearing_to_compass():
     assert bearing_to_compass(180) == "S"
     assert bearing_to_compass(270) == "W"
     assert bearing_to_compass(359) == "N"
+
+
+def test_elevation_overhead_is_90():
+    # Directly overhead (zero ground distance) -> straight up.
+    assert abs(elevation_deg(0.0, 10000.0) - 90.0) < 1e-6
+
+
+def test_elevation_45_degrees():
+    # Equal altitude and ground distance -> 45 degrees above the horizon.
+    assert abs(elevation_deg(5000.0, 5000.0) - 45.0) < 1e-6
+
+
+def test_elevation_low_on_horizon():
+    # Far away, low altitude -> small elevation angle.
+    assert elevation_deg(50000.0, 1000.0) < 5.0
 
 
 def test_bounding_box_contains_center():
